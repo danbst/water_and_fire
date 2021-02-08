@@ -97,10 +97,16 @@ water_scaled = pygame.transform.smoothscale(water_sprite, (int(BLOCK_WIDTH*0.8),
 ## тест розмірів спрайту
 #water_scaled.fill((0,0,255))
 
-SPRITES = dict(
+pygame.mixer.pre_init(44100, -16, 1, 512)
+pygame.mixer.init(frequency=8000, size=8)
+
+ASSETS = dict(
     fire = fire_scaled,
     water = water_scaled,
+    boom = pygame.mixer.Sound('./assets/bom.wav'),
+    coin = pygame.mixer.Sound('./assets/Coin6.wav'),
 )
+
 
 class Block(pygame.sprite.Sprite):
     def __init__(self, x, y, c):
@@ -127,8 +133,8 @@ def create_level(level):
     return entities, platforms
 
 MOVE_SPEED = 10
-JUMP_POWER = 10
-GRAVITY = 0.35
+JUMP_POWER = 20
+GRAVITY = 1.0
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x=0, y=0, img=None, color=None):
@@ -181,6 +187,11 @@ class Player(pygame.sprite.Sprite):
                 if xvel < 0:                      # если движется влево
                     self.rect.left = p.rect.right # то не движется влево
                 if yvel > 0 and p.rect.y > self.rect.y:                      # если падает вниз
+                    if self.yvel > GRAVITY*10:
+                        if self == water_hero:
+                            ASSETS['coin'].play()
+                        else:
+                            ASSETS['boom'].play()
                     self.rect.bottom = p.rect.top # то не падает вниз
                     self.onGround = True          # и становится на что-то твердое
                     self.yvel = 0                 # и энергия падения пропадает
@@ -195,12 +206,12 @@ def update(dt, keys):
     display.fill((0,0,0))
 
     fire_hero.update(keys[pygame.K_a], keys[pygame.K_d], keys[pygame.K_SPACE], platforms)
-    water_hero.update(keys[pygame.K_LEFT], keys[pygame.K_RIGHT], keys[pygame.K_SPACE], platforms)
+    water_hero.update(keys[pygame.K_LEFT], keys[pygame.K_RIGHT], keys[pygame.K_UP], platforms)
 
     entities.draw(display)
 
-fire_hero = Player(img=SPRITES['fire'])
-water_hero = Player(img=SPRITES['water'])
+fire_hero = Player(img=ASSETS['fire'])
+water_hero = Player(img=ASSETS['water'])
 
 entities, platforms = create_level(level1)
 
