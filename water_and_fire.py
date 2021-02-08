@@ -71,15 +71,11 @@ def draw_level(level):
         result += "\n"
     print(result)
 
-sprites = dict(
-    fire = pygame.image.load('./assets/Огонь2.0.png'),
-)
-
 BLOCK_WIDTH = 64
 BLOCK_HEIGHT = 64
 BLOCK_COLORS = {
    '0': (0, 0, 0),
-   '1': (255, 0, 0),
+   '1': (50, 50, 50),
    '2': (0, 255, 0),
    '3': (0, 0, 255),
    '4': (128, 128, 0),
@@ -92,8 +88,15 @@ BLOCK_COLORS = {
 # підключення спрайтів
 play_sprite = pygame.image.load('./assets/play.png')
 fire_sprite = pygame.image.load('./assets/Огонь2.0.png')
+water_sprite = pygame.image.load('./assets/water.png')
 # маштабування спрайтів у нові розміри
-fire = pygame.transform.smoothscale(fire_sprite, (100, 100))
+fire_scaled = pygame.transform.smoothscale(fire_sprite, (BLOCK_WIDTH, BLOCK_HEIGHT))
+water_scaled = pygame.transform.smoothscale(water_sprite, (BLOCK_WIDTH, BLOCK_HEIGHT))
+
+SPRITES = dict(
+    fire = fire_scaled,
+    water = water_scaled,
+)
 
 class Block(pygame.sprite.Sprite):
     def __init__(self, x, y, c):
@@ -107,22 +110,61 @@ def create_level(level):
     rows = level.lstrip().rstrip().split('\n')
     for y, row in enumerate(rows):
         for x, block in enumerate(row.split(' ')):
-            if block in "0156":
+            if block in "01":
                b = Block(x*BLOCK_WIDTH, y*BLOCK_HEIGHT, block)
                entities.add(b)
+            elif block == "6":
+                fire_hero.setpos(x*BLOCK_WIDTH, y*BLOCK_HEIGHT)
+            elif block == "5":
+                water_hero.setpos(x*BLOCK_WIDTH, y*BLOCK_HEIGHT)
     return entities
+
+MOVE_SPEED = 10
+JUMP_POWER = 10
+GRAVITY = 0.35
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self, x=0, y=0, img=None, color=None):
+        pygame.sprite.Sprite.__init__(self)
+        self.xvel = 0
+        self.yvel = 0
+        if img:
+            self.image = img
+        elif color:
+            self.image = pygame.Surface((BLOCK_WIDTH, BLOCK_HEIGHT))
+            self.image.fill(color)
+        self.rect = pygame.Rect(x, y, BLOCK_WIDTH, BLOCK_HEIGHT) # прямоугольный объект
+
+    def setpos(self, x, y):
+        self.rect.x = x
+        self.rect.y = y
+
+    def update(self, left, right):
+        if left:
+            self.xvel = -MOVE_SPEED # Лево = x- n
+ 
+        if right:
+            self.xvel = MOVE_SPEED # Право = x + n
+         
+        if not(left or right): # стоим, когда нет указаний идти
+            self.xvel = 0
+
+        self.rect.x += self.xvel # переносим свои положение на xvel 
+   
+    def draw(self, screen): # Выводим себя на экран
+        screen.blit(self.image, (self.rect.x, self.rect.y))
+
+fire_hero = Player(img=SPRITES['fire'])
+water_hero = Player(img=SPRITES['water'])
 
 def update(dt, keys):
     display.fill((0,0,0))
 
-    if keys[pygame.K_a]:
-        #p1.x = p1.x - 10
-        pass
-    elif keys[pygame.K_d]:
-        #p1.x = p1.x + 10
-        pass
-
+    fire_hero.update(keys[pygame.K_a], keys[pygame.K_d])
+    water_hero.update(keys[pygame.K_LEFT], keys[pygame.K_RIGHT])
     entities.draw(display)
+    fire_hero.draw(display)
+    water_hero.draw(display)
 
 entities = create_level(level2)
 game()
