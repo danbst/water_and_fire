@@ -97,8 +97,8 @@ water_scaled = pygame.transform.smoothscale(water_sprite, (int(BLOCK_WIDTH*0.8),
 ## тест розмірів спрайту
 #water_scaled.fill((0,0,255))
 
-pygame.mixer.pre_init(44100, -16, 1, 512)
-pygame.mixer.init(frequency=8000, size=8)
+pygame.mixer.pre_init(32000, -16, 1, 512)
+pygame.mixer.init(frequency=32000, size=8)
 
 ASSETS = dict(
     fire = fire_scaled,
