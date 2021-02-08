@@ -12,7 +12,7 @@ def game():
     try:
         run = True
         while run:
-            dt = clock.tick(60)
+            dt = clock.tick(25)
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     run = False
@@ -37,7 +37,7 @@ level1 = """
 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-1 0 0 0 2 0 0 0 0 0 2 0 0 0 0 1
+1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
 1 5 0 0 2 0 0 3 0 0 2 0 0 0 6 1
 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 """
@@ -88,12 +88,13 @@ BLOCK_COLORS = {
 }
 
 # підключення спрайтів
+pygame.mixer.init(frequency=32000, size=8)
 play_sprite = pygame.image.load('./assets/play.png')
 fire_sprite = pygame.image.load('./assets/Огонь2.0.png')
 water_sprite = pygame.image.load('./assets/water.png')
 # маштабування спрайтів у нові розміри
-fire_scaled = pygame.transform.smoothscale(fire_sprite, (int(BLOCK_WIDTH*0.8), int(BLOCK_HEIGHT*0.8)))
-water_scaled = pygame.transform.smoothscale(water_sprite, (int(BLOCK_WIDTH*0.8), int(BLOCK_HEIGHT*0.8)))
+fire_scaled = pygame.transform.smoothscale(fire_sprite, (int(BLOCK_WIDTH*0.6), int(BLOCK_HEIGHT*0.8)))
+water_scaled = pygame.transform.smoothscale(water_sprite, (int(BLOCK_WIDTH*0.6), int(BLOCK_HEIGHT*0.8)))
 ## тест розмірів спрайту
 #water_scaled.fill((0,0,255))
 
@@ -121,6 +122,8 @@ def create_level(level):
     rows = level.lstrip().rstrip().split('\n')
     for y, row in enumerate(rows):
         for x, block in enumerate(row.split(' ')):
+            if block == '3':
+               y += 0.5
             b = Block(x*BLOCK_WIDTH, y*BLOCK_HEIGHT, block)
             entities.add(b)
             b.type = block
@@ -133,7 +136,7 @@ def create_level(level):
     return entities, platforms
 
 MOVE_SPEED = 10
-JUMP_POWER = 20
+JUMP_POWER = 13
 GRAVITY = 1.0
 
 class Player(pygame.sprite.Sprite):
