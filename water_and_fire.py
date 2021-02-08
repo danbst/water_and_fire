@@ -1,3 +1,5 @@
+# Inspired by https://habr.com/ru/post/193888/
+
 import pygame
 import random
 
@@ -36,7 +38,7 @@ level1 = """
 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
 1 0 0 0 2 0 0 0 0 0 2 0 0 0 0 1
-1 0 0 0 2 0 0 3 0 0 2 0 0 0 0 1
+1 5 0 0 2 0 0 3 0 0 2 0 0 0 6 1
 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 """
 
@@ -90,8 +92,10 @@ play_sprite = pygame.image.load('./assets/play.png')
 fire_sprite = pygame.image.load('./assets/Огонь2.0.png')
 water_sprite = pygame.image.load('./assets/water.png')
 # маштабування спрайтів у нові розміри
-fire_scaled = pygame.transform.smoothscale(fire_sprite, (BLOCK_WIDTH, BLOCK_HEIGHT))
-water_scaled = pygame.transform.smoothscale(water_sprite, (BLOCK_WIDTH, BLOCK_HEIGHT))
+fire_scaled = pygame.transform.smoothscale(fire_sprite, (int(BLOCK_WIDTH*0.8), int(BLOCK_HEIGHT*0.8)))
+water_scaled = pygame.transform.smoothscale(water_sprite, (int(BLOCK_WIDTH*0.8), int(BLOCK_HEIGHT*0.8)))
+## тест розмірів спрайту
+#water_scaled.fill((0,0,255))
 
 SPRITES = dict(
     fire = fire_scaled,
@@ -107,17 +111,20 @@ class Block(pygame.sprite.Sprite):
 
 def create_level(level):
     entities = pygame.sprite.Group()
+    platforms = []
     rows = level.lstrip().rstrip().split('\n')
     for y, row in enumerate(rows):
         for x, block in enumerate(row.split(' ')):
-            if block in "01":
-               b = Block(x*BLOCK_WIDTH, y*BLOCK_HEIGHT, block)
-               entities.add(b)
-            elif block == "6":
+            b = Block(x*BLOCK_WIDTH, y*BLOCK_HEIGHT, block)
+            entities.add(b)
+            b.type = block
+            if block not in '560':
+                platforms.append(b)
+            if block == "6":
                 fire_hero.setpos(x*BLOCK_WIDTH, y*BLOCK_HEIGHT)
             elif block == "5":
                 water_hero.setpos(x*BLOCK_WIDTH, y*BLOCK_HEIGHT)
-    return entities
+    return entities, platforms
 
 MOVE_SPEED = 10
 JUMP_POWER = 10
@@ -128,43 +135,76 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.xvel = 0
         self.yvel = 0
+        self.onGround = False
         if img:
             self.image = img
         elif color:
             self.image = pygame.Surface((BLOCK_WIDTH, BLOCK_HEIGHT))
             self.image.fill(color)
-        self.rect = pygame.Rect(x, y, BLOCK_WIDTH, BLOCK_HEIGHT) # прямоугольный объект
+        self.rect = pygame.Rect(x, y, *self.image.get_size()) # прямоугольный объект
 
     def setpos(self, x, y):
         self.rect.x = x
         self.rect.y = y
 
-    def update(self, left, right):
+    def update(self, left, right, up, platforms):
         if left:
             self.xvel = -MOVE_SPEED # Лево = x- n
  
         if right:
             self.xvel = MOVE_SPEED # Право = x + n
-         
+
+        if up:
+           if self.onGround: # прыгаем, только когда можем оттолкнуться от земли
+               self.yvel = -JUMP_POWER
+               self.onGround = False
+
         if not(left or right): # стоим, когда нет указаний идти
             self.xvel = 0
 
+        if not self.onGround:
+            self.yvel +=  GRAVITY
+
+        self.onGround = False
         self.rect.x += self.xvel # переносим свои положение на xvel 
-   
+        self.collide(self.xvel, 0, platforms)
+        self.rect.y += self.yvel # переносим свои положение на xvel 
+        self.collide(0, self.yvel, platforms)
+
+    def collide(self, xvel, yvel, platforms):
+        for p in platforms:
+            if p.type not in '123':
+                continue
+            if pygame.sprite.collide_rect(self, p): # если есть пересечение платформы с игроком
+                if xvel > 0:                      # если движется вправо
+                    self.rect.right = p.rect.left # то не движется вправо
+                if xvel < 0:                      # если движется влево
+                    self.rect.left = p.rect.right # то не движется влево
+                if yvel > 0 and p.rect.y > self.rect.y:                      # если падает вниз
+                    self.rect.bottom = p.rect.top # то не падает вниз
+                    self.onGround = True          # и становится на что-то твердое
+                    self.yvel = 0                 # и энергия падения пропадает
+                if yvel < 0:                      # если движется вверх
+                    self.rect.top = p.rect.bottom+5 # то не движется вверх
+                    self.yvel = 0                 # и энергия прыжка пропадает
+ 
     def draw(self, screen): # Выводим себя на экран
         screen.blit(self.image, (self.rect.x, self.rect.y))
-
-fire_hero = Player(img=SPRITES['fire'])
-water_hero = Player(img=SPRITES['water'])
 
 def update(dt, keys):
     display.fill((0,0,0))
 
-    fire_hero.update(keys[pygame.K_a], keys[pygame.K_d])
-    water_hero.update(keys[pygame.K_LEFT], keys[pygame.K_RIGHT])
-    entities.draw(display)
-    fire_hero.draw(display)
-    water_hero.draw(display)
+    fire_hero.update(keys[pygame.K_a], keys[pygame.K_d], keys[pygame.K_SPACE], platforms)
+    water_hero.update(keys[pygame.K_LEFT], keys[pygame.K_RIGHT], keys[pygame.K_SPACE], platforms)
 
-entities = create_level(level2)
+    entities.draw(display)
+
+fire_hero = Player(img=SPRITES['fire'])
+water_hero = Player(img=SPRITES['water'])
+
+entities, platforms = create_level(level1)
+
+entities.add(fire_hero)
+entities.add(water_hero)
+
 game()
