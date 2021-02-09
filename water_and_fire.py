@@ -105,10 +105,12 @@ ASSETS = dict(
     water = water_scaled,
     boom = pygame.mixer.Sound('./assets/bom.wav'),
     coin = pygame.mixer.Sound('./assets/Coin6.wav'),
+    jump = pygame.mixer.Sound('./assets/jump.wav'),
 )
 
 ASSETS['boom'].set_volume(0.1)
 ASSETS['coin'].set_volume(0.1)
+ASSETS['jump'].set_volume(0.1)
 
 
 class Block(pygame.sprite.Sprite):
@@ -194,7 +196,7 @@ class Player(pygame.sprite.Sprite):
                         if self == water_hero:
                             ASSETS['coin'].play()
                         else:
-                            ASSETS['boom'].play()
+                            ASSETS['jump'].play()
                     self.rect.bottom = p.rect.top # то не падает вниз
                     self.onGround = True          # и становится на что-то твердое
                     self.yvel = 0                 # и энергия падения пропадает
