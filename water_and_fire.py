@@ -76,7 +76,7 @@ def draw_level(level):
 BLOCK_WIDTH = 64
 BLOCK_HEIGHT = 64
 BLOCK_COLORS = {
-   '0': (0, 0, 0),
+   '0': (0, 0, 0, 0),
    '1': (50, 50, 50),
    '2': (0, 255, 0),
    '3': (0, 0, 255),
@@ -92,9 +92,13 @@ pygame.mixer.init(frequency=32000, size=8)
 play_sprite = pygame.image.load('./assets/play.png')
 fire_sprite = pygame.image.load('./assets/Огонь2.0.png')
 water_sprite = pygame.image.load('./assets/water.png')
+watert_sprite = pygame.image.load('./assets/water.png')
+bg_sprite = pygame.image.load('./assets/bg.png')
 # маштабування спрайтів у нові розміри
 fire_scaled = pygame.transform.smoothscale(fire_sprite, (int(BLOCK_WIDTH*0.6), int(BLOCK_HEIGHT*0.8)))
 water_scaled = pygame.transform.smoothscale(water_sprite, (int(BLOCK_WIDTH*0.6), int(BLOCK_HEIGHT*0.8)))
+watert_scaled = pygame.transform.smoothscale(watert_sprite, (int(BLOCK_WIDTH*0.6), int(BLOCK_HEIGHT*0.8)))
+bg_scaled = pygame.transform.smoothscale(bg_sprite, (int(BLOCK_WIDTH*20), int(BLOCK_HEIGHT*15)))
 ## тест розмірів спрайту
 #water_scaled.fill((0,0,255))
 
@@ -104,6 +108,8 @@ pygame.mixer.init(frequency=8000, size=8)
 ASSETS = dict(
     fire = fire_scaled,
     water = water_scaled,
+    watert = watert_scaled,
+    bg = bg_scaled,
     boom = pygame.mixer.Sound('./assets/bom.wav'),
     coin = pygame.mixer.Sound('./assets/Coin6.wav'),
 )
@@ -118,6 +124,7 @@ class Block(pygame.sprite.Sprite):
 
 def create_level(level):
     entities = pygame.sprite.Group()
+    entities.add(bg_hero)
     platforms = []
     rows = level.lstrip().rstrip().split('\n')
     for y, row in enumerate(rows):
@@ -125,7 +132,8 @@ def create_level(level):
             if block == '3':
                y += 0.5
             b = Block(x*BLOCK_WIDTH, y*BLOCK_HEIGHT, block)
-            entities.add(b)
+            if block != '0':
+                entities.add(b)
             b.type = block
             if block not in '560':
                 platforms.append(b)
@@ -133,11 +141,14 @@ def create_level(level):
                 fire_hero.setpos(x*BLOCK_WIDTH, y*BLOCK_HEIGHT)
             elif block == "5":
                 water_hero.setpos(x*BLOCK_WIDTH, y*BLOCK_HEIGHT)
+                watert_hero.setpos(x*BLOCK_WIDTH, y*BLOCK_HEIGHT)
+                bg_hero.setpos(0*BLOCK_WIDTH, 0*BLOCK_HEIGHT)
     return entities, platforms
 
-MOVE_SPEED = 10
+MOVE_SPEED = 5
+AMOVE_SPEED = 100
 JUMP_POWER = 13
-GRAVITY = 1.0
+GRAVITY = 2.0
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x=0, y=0, img=None, color=None):
@@ -158,10 +169,16 @@ class Player(pygame.sprite.Sprite):
 
     def update(self, left, right, up, platforms):
         if left:
-            self.xvel = -MOVE_SPEED # Лево = x- n
+            water_hero.xvel = -MOVE_SPEED # Лево = x- n
  
         if right:
-            self.xvel = MOVE_SPEED # Право = x + n
+            water_hero.xvel = MOVE_SPEED # Право = x + n
+            
+        if left:
+            fire_hero.xvel = -AMOVE_SPEED # Лево = x- n
+ 
+        if right:
+            fire_hero.xvel = AMOVE_SPEED # Право = x + n
 
         if up:
            if self.onGround: # прыгаем, только когда можем оттолкнуться от земли
@@ -172,7 +189,8 @@ class Player(pygame.sprite.Sprite):
             self.xvel = 0
 
         if not self.onGround:
-            self.yvel +=  GRAVITY
+            if self.collisions == True:
+                self.yvel +=  GRAVITY
 
         self.onGround = False
         self.rect.x += self.xvel # переносим свои положение на xvel 
@@ -181,6 +199,8 @@ class Player(pygame.sprite.Sprite):
         self.collide(0, self.yvel, platforms)
 
     def collide(self, xvel, yvel, platforms):
+        if not self.collisions:
+           return
         for p in platforms:
             if p.type not in '123':
                 continue
@@ -210,15 +230,24 @@ def update(dt, keys):
 
     fire_hero.update(keys[pygame.K_a], keys[pygame.K_d], keys[pygame.K_SPACE], platforms)
     water_hero.update(keys[pygame.K_LEFT], keys[pygame.K_RIGHT], keys[pygame.K_UP], platforms)
+    watert_hero.update(keys[pygame.K_f], keys[pygame.K_h], keys[pygame.K_b], platforms)
+    bg_hero.update(keys[pygame.K_u], keys[pygame.K_i], keys[pygame.K_o], platforms)
 
     entities.draw(display)
 
 fire_hero = Player(img=ASSETS['fire'])
 water_hero = Player(img=ASSETS['water'])
+watert_hero = Player(img=ASSETS['watert'])
+bg_hero = Player(img=ASSETS['bg'])
 
 entities, platforms = create_level(level1)
 
 entities.add(fire_hero)
 entities.add(water_hero)
+entities.add(watert_hero)
+water_hero.collisions = True
+fire_hero.collisions = True
+watert_hero.collisions = True
+bg_hero.collisions = False
 
 game()
