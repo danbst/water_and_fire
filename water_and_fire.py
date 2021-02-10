@@ -137,13 +137,14 @@ def create_level(level):
                 water_hero.setpos(x*BLOCK_WIDTH, y*BLOCK_HEIGHT)
     return entities, platforms
 
-MOVE_SPEED = 10
+DEFAULT_MOVE_SPEED = 10
 JUMP_POWER = 20
 GRAVITY = 1.0
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x=0, y=0, img=None, color=None):
         pygame.sprite.Sprite.__init__(self)
+        self.move_speed = DEFAULT_MOVE_SPEED
         self.xvel = 0
         self.yvel = 0
         self.onGround = False
@@ -160,10 +161,10 @@ class Player(pygame.sprite.Sprite):
 
     def update(self, left, right, up, platforms):
         if left:
-            self.xvel = -MOVE_SPEED # Лево = x- n
+            self.xvel = -self.move_speed # Лево = x- n
  
         if right:
-            self.xvel = MOVE_SPEED # Право = x + n
+            self.xvel = self.move_speed # Право = x + n
 
         if up:
            if self.onGround: # прыгаем, только когда можем оттолкнуться от земли
@@ -216,7 +217,9 @@ def update(dt, keys):
     entities.draw(display)
 
 fire_hero = Player(img=ASSETS['fire'])
+fire_hero.move_speed = 2
 water_hero = Player(img=ASSETS['water'])
+water_hero.move_speed = 15
 
 entities, platforms = create_level(level1)
 
