@@ -147,6 +147,8 @@ class Player(pygame.sprite.Sprite):
         self.move_speed = DEFAULT_MOVE_SPEED
         self.xvel = 0
         self.yvel = 0
+        self.x_accel = 0
+        self.slow_down = True
         self.onGround = False
         if img:
             self.image = img
@@ -161,21 +163,33 @@ class Player(pygame.sprite.Sprite):
 
     def update(self, left, right, up, platforms):
         if left:
-            self.xvel = -self.move_speed # Лево = x- n
+            self.x_accel = -1
+            self.slow_down = False
  
         if right:
-            self.xvel = self.move_speed # Право = x + n
+            self.x_accel = 1
+            self.slow_down = False
 
         if up:
            if self.onGround: # прыгаем, только когда можем оттолкнуться от земли
                self.yvel = -JUMP_POWER
                self.onGround = False
 
-        if not(left or right): # стоим, когда нет указаний идти
-            self.xvel = 0
+        if not(left or right):
+            self.slow_down = True
+            if abs(self.xvel) < self.x_accel*2:
+                # зупиняємось
+                self.x_accel = 0
+                self.xvel = 0
 
         if not self.onGround:
             self.yvel +=  GRAVITY
+        elif self.slow_down:
+            self.xvel -= self.x_accel
+        elif not self.slow_down:
+            self.xvel += self.x_accel
+
+        self.xvel = max(-5, min(5, self.xvel))
 
         self.onGround = False
         self.rect.x += self.xvel # переносим свои положение на xvel 
