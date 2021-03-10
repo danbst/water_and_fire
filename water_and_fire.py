@@ -210,17 +210,114 @@ class Player(pygame.sprite.Sprite):
 def update(dt, keys):
     display.fill((0,0,0))
 
-    fire_hero.update(keys[pygame.K_a], keys[pygame.K_d], keys[pygame.K_SPACE], platforms)
-    water_hero.update(keys[pygame.K_LEFT], keys[pygame.K_RIGHT], keys[pygame.K_UP], platforms)
+    handle_menu(keys)
 
-    entities.draw(display)
+    if current_interface == "MAIN_MENU":
+        pygame.draw.rect(display, (0,255,0), (100, 50, 500, 50))                
+        pygame.draw.rect(display, (0,255,0), (100, 110, 500, 50))                
+        pygame.draw.rect(display, (0,255,0), (100, 170, 500, 50))                
+        pygame.draw.rect(display, (0,255,0), (100, 250, 500, 50))                
+        print(main_menu_interface)
+    elif current_interface == "SETTINGS":
+        print(settings_interface)
+    elif current_interface == "DONUT":
+        print(donut_interface)
+    elif current_interface == "LEVELS":
+        left_button = "(L)" if current_level > 1 else "   "
+        right_button = "(R)" if current_level < num_levels  else "   "
+        print(" (0) -- основне меню")
+        print(" (GO) -- запуск")
+        print(levels_interface.format(levels[current_level - 1], left_button, right_button))
+    elif current_interface == "GAME":
+        fire_hero.update(keys[pygame.K_a], keys[pygame.K_d], keys[pygame.K_SPACE], platforms)
+        water_hero.update(keys[pygame.K_LEFT], keys[pygame.K_RIGHT], keys[pygame.K_UP], platforms)
 
-fire_hero = Player(img=ASSETS['fire'])
-water_hero = Player(img=ASSETS['water'])
+        entities.draw(display)
 
-entities, platforms = create_level(level1)
+def init(lvl):
+    global fire_hero, water_hero, entities, platforms
+    fire_hero = Player(img=ASSETS['fire'])
+    water_hero = Player(img=ASSETS['water'])
 
-entities.add(fire_hero)
-entities.add(water_hero)
+    entities, platforms = create_level(lvl)
+
+    entities.add(fire_hero)
+    entities.add(water_hero)
+
+main_menu_interface = """
+    Вибери кнопку:
+    1) рівні
+    2) settings
+    3) donut
+    4) exit
+"""
+
+settings_interface = """
+    Тут можна було настроїти опції, але програмістам не видали грошей на це. Зажали.
+    
+    0) Основне меню
+    1) Закинути донат
+    """
+
+donut_interface = """
+  Моя Bitcoin адреса: ....
+  Чекаю.
+
+  0) Основне меню
+"""
+
+num_levels = 9
+levels = [ f"Левел {x}" for x in range(1, num_levels+1) ]
+
+levels_interface = """
+{1}  |     {0}     |  {2}
+"""
+
+current_level = 1
+
+current_interface = "MAIN_MENU"
+
+def handle_menu(keys):
+    global current_interface, current_level
+    
+    if current_interface == "MAIN_MENU" and keys[pygame.K_4]:
+        print("EXit")
+        #sys.exit(0)
+    elif  current_interface == "MAIN_MENU" and keys[pygame.K_1]:
+        current_interface = "LEVELS"
+    elif  current_interface == "MAIN_MENU" and keys[pygame.K_2]:
+        current_interface = "SETTINGS"
+    elif  current_interface == "MAIN_MENU" and keys[pygame.K_3]:
+        current_interface = "DONUT" 
+
+    elif  current_interface == "SETTINGS" and keys[pygame.K_0]:
+        current_interface = "MAIN_MENU"
+    elif  current_interface == "SETTINGS" and keys[pygame.K_1]:
+        current_interface = "DONUT"
+
+    elif  current_interface == "DONUT" and keys[pygame.K_0]:                                
+        current_interface = "MAIN_MENU"
+
+    elif current_interface == "LEVELS" and keys[pygame.K_RETURN]:
+        current_interface = "GAME"
+        if current_level == 1:
+            init(level1)
+        elif current_level == 2:
+            init(level2)
+        else:
+            print("no such level")
+    elif current_interface == "LEVELS" and keys[pygame.K_0]:
+        current_interface = "MAIN_MENU"
+    elif current_interface == "LEVELS" and keys[pygame.K_r]:
+        current_level += 1
+        if current_level == 10:
+            current_level -= 1 
+    elif current_interface == "LEVELS" and keys[pygame.K_l]:
+        if current_level == 1:
+            print("куда пішов, а ну вперед!")
+        elif 1 < current_level < 9:
+            current_level -= 1
+        elif current_level == 9:
+            current_level -= 1
 
 game()
