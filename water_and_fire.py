@@ -8,19 +8,26 @@ height = 450
 display = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 
+buttons = []
+interface_group = pygame.sprite.Group()
+
 def game():
     try:
         run = True
         while run:
             dt = clock.tick(60)
+            clicked_buttons = []
             for e in pygame.event.get():
+                if e.type == pygame.MOUSEBUTTONUP:
+                    pos = pygame.mouse.get_pos()
+                    clicked_buttons = [s for s in buttons if s.rect.collidepoint(pos)]
                 if e.type == pygame.QUIT:
                     run = False
             keys = pygame.key.get_pressed()
             if keys[pygame.K_ESCAPE]:
                 run = False
 
-            update(dt, keys)
+            update(dt, keys, clicked_buttons)
             
             pygame.display.flip()
     except KeyboardInterrupt:
@@ -120,6 +127,16 @@ class Block(pygame.sprite.Sprite):
         self.image.fill(BLOCK_COLORS[c])
         self.rect = pygame.Rect(x, y, BLOCK_WIDTH, BLOCK_HEIGHT)
 
+class Button(pygame.sprite.Sprite):
+    def __init__(self, name, x, y, color):
+        pygame.sprite.Sprite.__init__(self)
+        button_width = 400
+        button_height = 50
+        self.image = pygame.Surface((button_width, button_height))
+        self.image.fill(color)
+        self.rect = pygame.Rect(x, y, button_width, button_height)
+        self.name = name
+
 def create_level(level):
     entities = pygame.sprite.Group()
     platforms = []
@@ -207,19 +224,29 @@ class Player(pygame.sprite.Sprite):
     def draw(self, screen): # Выводим себя на экран
         screen.blit(self.image, (self.rect.x, self.rect.y))
 
-def update(dt, keys):
+def update(dt, keys, clicked_buttons):
     display.fill((0,0,0))
 
-    handle_menu(keys)
+    has_changed = handle_menu(keys, clicked_buttons)
 
     if current_interface == "MAIN_MENU":
-        pygame.draw.rect(display, (0,255,0), (100, 50, 500, 50))                
-        pygame.draw.rect(display, (0,255,0), (100, 110, 500, 50))                
-        pygame.draw.rect(display, (0,255,0), (100, 170, 500, 50))                
-        pygame.draw.rect(display, (0,255,0), (100, 250, 500, 50))                
-        print(main_menu_interface)
+        if has_changed:
+            buttons.clear()
+            interface_group.empty()
+            buttons.append(Button("Рівні", 100, 50, (0, 255, 0)))
+            buttons.append(Button("Settings", 100, 150, (255, 255, 0)))
+            buttons.append(Button("Donut", 100, 250, (255, 0, 0)))
+            buttons.append(Button("Exit", 100, 350, (255, 0, 255)))
+            interface_group.add(buttons)
+            print(main_menu_interface)
     elif current_interface == "SETTINGS":
-        print(settings_interface)
+        if has_changed:
+            buttons.clear()
+            interface_group.empty()
+            buttons.append(Button("Main menu", 100, 50, (0, 255, 0)))
+            buttons.append(Button("Donut", 100, 150, (255, 255, 0)))
+            interface_group.add(buttons)
+            print(settings_interface)
     elif current_interface == "DONUT":
         print(donut_interface)
     elif current_interface == "LEVELS":
@@ -233,6 +260,7 @@ def update(dt, keys):
         water_hero.update(keys[pygame.K_LEFT], keys[pygame.K_RIGHT], keys[pygame.K_UP], platforms)
 
         entities.draw(display)
+    interface_group.draw(display)
 
 def init(lvl):
     global fire_hero, water_hero, entities, platforms
@@ -275,28 +303,40 @@ levels_interface = """
 
 current_level = 1
 
-current_interface = "MAIN_MENU"
+current_interface = ""
 
-def handle_menu(keys):
+def handle_menu(keys, clicked_buttons):
     global current_interface, current_level
+    print(clicked_buttons)
+    button = clicked_buttons[0].name if clicked_buttons else None
+
+    if current_interface == "":
+        current_interface = "MAIN_MENU"
+        return True
     
     if current_interface == "MAIN_MENU" and keys[pygame.K_4]:
         print("EXit")
         #sys.exit(0)
-    elif  current_interface == "MAIN_MENU" and keys[pygame.K_1]:
+    elif  current_interface == "MAIN_MENU" and button == "Рівні":
         current_interface = "LEVELS"
-    elif  current_interface == "MAIN_MENU" and keys[pygame.K_2]:
+        return True
+    elif  current_interface == "MAIN_MENU" and button == "Settings":
         current_interface = "SETTINGS"
-    elif  current_interface == "MAIN_MENU" and keys[pygame.K_3]:
+        return True
+    elif  current_interface == "MAIN_MENU" and button == "Donut":
         current_interface = "DONUT" 
+        return True
 
-    elif  current_interface == "SETTINGS" and keys[pygame.K_0]:
+    elif  current_interface == "SETTINGS" and button == "Main menu":
         current_interface = "MAIN_MENU"
-    elif  current_interface == "SETTINGS" and keys[pygame.K_1]:
+        return True
+    elif  current_interface == "SETTINGS" and button == "Donut":
         current_interface = "DONUT"
+        return True
 
     elif  current_interface == "DONUT" and keys[pygame.K_0]:                                
         current_interface = "MAIN_MENU"
+        return True
 
     elif current_interface == "LEVELS" and keys[pygame.K_RETURN]:
         current_interface = "GAME"
@@ -306,12 +346,15 @@ def handle_menu(keys):
             init(level2)
         else:
             print("no such level")
+        return True
     elif current_interface == "LEVELS" and keys[pygame.K_0]:
         current_interface = "MAIN_MENU"
+        return True
     elif current_interface == "LEVELS" and keys[pygame.K_r]:
         current_level += 1
         if current_level == 10:
             current_level -= 1 
+        return True
     elif current_interface == "LEVELS" and keys[pygame.K_l]:
         if current_level == 1:
             print("куда пішов, а ну вперед!")
@@ -319,5 +362,6 @@ def handle_menu(keys):
             current_level -= 1
         elif current_level == 9:
             current_level -= 1
-
+        return True
+    return False
 game()
